@@ -117,7 +117,7 @@ namespace LwDecomp
                 var module = new PEFile(f);
                 var assemblyResolver = new UniversalAssemblyResolver(f, true, module.DetectTargetFrameworkId());
                 var cd = new WholeProjectDecompiler(ds, assemblyResolver, assemblyResolver, null); // maybe add PDB provider
-
+                
                 var decDllName_NoExt = decDllName.Replace(".dll", "");
                 var decOutputFolder = Path.Combine(outputFolder, decDllName_NoExt);
                 Directory.CreateDirectory(decOutputFolder);
@@ -140,7 +140,31 @@ namespace LwDecomp
                     }
                 }
 
+                ReplaceDotInPathWithSlash(decOutputFolder);
 
+                void ReplaceDotInPathWithSlash(string rootFolder)
+                {
+                    foreach (var folder in Directory.GetDirectories(rootFolder, "*", SearchOption.TopDirectoryOnly))
+                    {
+                        var folderParent = Path.Join(folder.Split(Path.DirectorySeparatorChar).SkipLast(1).ToArray());
+                        var folderName = folder.Split(Path.DirectorySeparatorChar).Last();
+                        if (folderName.Contains("."))
+                        {
+                            //var splitted = folderName.Split(".");
+
+                            //var lastFolderName = splitted.Last();
+                            //var notLastFolderPath = Path.Combine(splitted.SkipLast(1).ToArray());
+                            var destFolder = Path.Combine(rootFolder, folderName.Replace('.', Path.DirectorySeparatorChar));
+                            Directory.CreateDirectory(string.Join(Path.DirectorySeparatorChar, destFolder.Split(Path.DirectorySeparatorChar).SkipLast(1)));
+                            Directory.Move(Path.Combine(rootFolder,folderName), destFolder);
+                        }
+                    }
+
+                    foreach (var folder in Directory.GetDirectories(rootFolder, "*", SearchOption.TopDirectoryOnly))
+                    {
+                        ReplaceDotInPathWithSlash(folder);
+                    }
+                }
 
                 var references = module.AssemblyReferences.Select(x => x.Name).ToArray();
                 var jcontent = JsonConvert.SerializeObject(new UnityAsmDef(decDllName_NoExt, references, true), Formatting.Indented);
