@@ -80,7 +80,33 @@ namespace LwDecomp
 
 
             Console.WriteLine("\nDecompiling client...");
-            var clientDecompKeywords = "SUCC;Jimmy;LICC;Lidgren;Logic;TypeFinder;SECCS;FancyInput;FancyPantsConsole;GameDataAccess".Split(";");
+            var clientDecompKeywords = new[]
+            {
+                "SUCC",
+                "Jimmy",
+                "LICC",
+                "Lidgren",
+                "Logic",
+                "TypeFinder",
+                "SECCS",
+                "FancyInput",
+                "FancyPantsConsole",
+                "GameDataAccess",
+                "Accessibility",
+                "DOTween",
+                "Kinematic",
+                "Knife",
+                "Minis",
+                "Naughty",
+                "Novell",
+                "OBJ",
+                "Sams",
+                "UI",
+                "Shapes",
+                "Simple",
+                "Ninia",
+                "LWRP"
+            };
             var clientDecompExplicitNames = "KnifeOutline.dll".Split(";");
             DecompDirectory(Path.Combine(decompRootFolder, "LWClient"), Path.Combine(lwInstallPath, clientSubpath), files => files.Where(f =>
                 f.EndsWith(".dll") && (clientDecompExplicitNames.Contains(f) || clientDecompKeywords.Any(keyword => f.Contains(keyword)))));
@@ -117,7 +143,7 @@ namespace LwDecomp
                 var module = new PEFile(f);
                 var assemblyResolver = new UniversalAssemblyResolver(f, true, module.DetectTargetFrameworkId());
                 var cd = new WholeProjectDecompiler(ds, assemblyResolver, assemblyResolver, null); // maybe add PDB provider
-                
+
                 var decDllName_NoExt = decDllName.Replace(".dll", "");
                 var decOutputFolder = Path.Combine(outputFolder, decDllName_NoExt);
                 Directory.CreateDirectory(decOutputFolder);
@@ -144,8 +170,16 @@ namespace LwDecomp
 
                 void ReplaceDotInPathWithSlash(string rootFolder)
                 {
-                    foreach (var folder in Directory.GetDirectories(rootFolder, "*", SearchOption.TopDirectoryOnly))
+                    foreach (var origfolder in Directory.GetDirectories(rootFolder, "*", SearchOption.TopDirectoryOnly))
                     {
+                        var longNamespaceName = @"\A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z\JFDKSLAFJDSA\HFDSJALFSjfdkslafjhdsklafdjslk\StopLooking\GoAway\NoEasterEggsHere\NoSeriously\DontYouHaveAnythingBetterToDo\OkFine\HereAreTheEasterEggs";
+                        var folder = origfolder.Replace(longNamespaceName.Replace('\\', Path.DirectorySeparatorChar), longNamespaceName.Split("\\").Last());
+
+                        if (folder != origfolder)
+                        {
+                            Directory.Move(origfolder, folder);
+                        }
+
                         var folderParent = Path.Join(folder.Split(Path.DirectorySeparatorChar).SkipLast(1).ToArray());
                         var folderName = folder.Split(Path.DirectorySeparatorChar).Last();
                         if (folderName.Contains("."))
@@ -156,7 +190,7 @@ namespace LwDecomp
                             //var notLastFolderPath = Path.Combine(splitted.SkipLast(1).ToArray());
                             var destFolder = Path.Combine(rootFolder, folderName.Replace('.', Path.DirectorySeparatorChar));
                             Directory.CreateDirectory(string.Join(Path.DirectorySeparatorChar, destFolder.Split(Path.DirectorySeparatorChar).SkipLast(1)));
-                            Directory.Move(Path.Combine(rootFolder,folderName), destFolder);
+                            Directory.Move(Path.Combine(rootFolder, folderName), destFolder);
                         }
                     }
 
@@ -166,9 +200,15 @@ namespace LwDecomp
                     }
                 }
 
+#if false
                 var references = module.AssemblyReferences.Select(x => x.Name).ToArray();
                 var jcontent = JsonConvert.SerializeObject(new UnityAsmDef(decDllName_NoExt, references, true), Formatting.Indented);
-                File.WriteAllText(Path.Combine(decOutputFolder, $"{decDllName_NoExt}.asmdef"), jcontent);
+                File.WriteAllText(Path.Combine(decOutputFolder, $"{decDllName_NoExt}.asmdef"), jcontent); 
+#endif
+
+                File.Copy(Path.Combine(cd.TargetDirectory, "Properties", "AssemblyInfo.cs"), Path.Combine(cd.TargetDirectory, "AssemblyInfo.cs"));
+                Directory.Delete(Path.Combine(cd.TargetDirectory, "Properties"), true);
+                File.Delete(Path.Combine(cd.TargetDirectory, decProjName));
             }
             totalSw.Stop();
             Console.WriteLine($"Decompilation done in {totalSw.ElapsedMilliseconds}ms!");
