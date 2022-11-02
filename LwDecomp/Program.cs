@@ -100,7 +100,7 @@ namespace LwDecomp
             var allFiles = Directory.GetFiles(dllSourceFolder, "*", SearchOption.TopDirectoryOnly).Select(x => x.Split(Path.DirectorySeparatorChar).Last()).ToArray();
             var filesToDecomp = decompFileNameSelector.Invoke(allFiles).Where(x => x.EndsWith(".dll")).Select(x => Path.Combine(dllSourceFolder, x));
 
-            var ds = new DecompilerSettings(LanguageVersion.Latest)
+            var ds = new DecompilerSettings(LanguageVersion.CSharp7_3)
             {
 
             };
