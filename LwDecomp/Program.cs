@@ -2,6 +2,7 @@
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.Metadata;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -117,7 +118,8 @@ namespace LwDecomp
                 var assemblyResolver = new UniversalAssemblyResolver(f, true, module.DetectTargetFrameworkId());
                 var cd = new WholeProjectDecompiler(ds, assemblyResolver, assemblyResolver, null); // maybe add PDB provider
 
-                var decOutputFolder = Path.Combine(outputFolder, decDllName);
+                var decDllName_NoExt = decDllName.Replace(".dll", "");
+                var decOutputFolder = Path.Combine(outputFolder, decDllName_NoExt);
                 Directory.CreateDirectory(decOutputFolder);
                 var projectFileName = Path.Combine(decOutputFolder, decProjName);
                 using (var projectFileWriter = new StreamWriter(File.OpenWrite(projectFileName)))
@@ -137,9 +139,34 @@ namespace LwDecomp
                         Console.WriteLine($"done in {decSw.ElapsedMilliseconds}ms!");
                     }
                 }
+
+
+
+                var references = module.AssemblyReferences.Select(x => x.Name).ToArray();
+                var jcontent = JsonConvert.SerializeObject(new UnityAsmDef(decDllName_NoExt, references, true), Formatting.Indented);
+                File.WriteAllText(Path.Combine(decOutputFolder, $"{decDllName_NoExt}.asmdef"), jcontent);
             }
             totalSw.Stop();
             Console.WriteLine($"Decompilation done in {totalSw.ElapsedMilliseconds}ms!");
         }
+    }
+
+    class UnityAsmDef
+    {
+        public UnityAsmDef(string name, string[] references, bool allowUnsafeCode)
+        {
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            References = references ?? throw new ArgumentNullException(nameof(references));
+            AllowUnsafeCode = allowUnsafeCode;
+        }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("references")]
+        public string[] References { get; set; }
+
+        [JsonProperty("allowUnsafeCode")]
+        public bool AllowUnsafeCode { get; set; }
     }
 }
